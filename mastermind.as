@@ -246,7 +246,7 @@ PrintConst: 	push 	R1
 				mov 	M[IO_WRITE] , R2
 				pop 	R2
 				pop 	R1
-				ret 								
+				ret 				
 
 ;===============================================================================
 ; PrintN: Faz print do numero de jogada atual no tabuleiro de jogo
@@ -255,16 +255,32 @@ PrintConst: 	push 	R1
 ;               Efeitos: Actualiza o número da jogada na janela de texto
 ;===============================================================================
 
-PrintN:   		mov 	R2, 000ah
+PrintN:   		mov 	R1, R0
+				mov 	R2, 000Ah
             	mov 	R3, M[JOGADA_INI]
 TesteN:        	cmp 	R3, 10
 	   	    	br.n 	ContinueN
+	   	    	inc 	R1
             	sub 	R3, 10
             	br 		TesteN
-ContinueN:     	add 	R3, 48
+ContinueN:     	cmp		R1, R0
+				br.z   	EndN
+				cmp 	R1, 9
+				br.p	ResetN
+				add 	R1, 48
+				mov 	M[IO_CURSOR], R2
+				mov 	M[IO_WRITE], R1
+				inc 	R2
+EndN:			add 	R3, 48
                 mov 	M[IO_CURSOR], R2
 				mov 	M[IO_WRITE],  R3
 				ret
+ResetN:			mov 	R1, 1
+				mov 	M[JOGADA_INI], R1
+				mov 	R2, 000Bh
+				mov 	M[IO_CURSOR], R2
+				mov 	M[IO_WRITE], R0
+				jmp 	PrintN				
 
 ;===============================================================================
 ; IncN: Incrementa o numero da jogada
@@ -351,7 +367,6 @@ CicloPC:		mov 	R3, M[R6]
 				cmp 	R1, R6
 				br.nz	CicloPC
 				rti
-
 
 ;===============================================================================
 ; ConfirmaJogada: Incrementa a jogada e escreve na janela de texto
