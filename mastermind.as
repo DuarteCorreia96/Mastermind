@@ -5,7 +5,8 @@
 ;
 ; Autor: 	Duarte Correia
 ;			João Guterres
-; Data: 30/04/2017 				Ultima Alteracao:01/05/2017 
+;
+; Data: 30/04/2017 				Ultima Alteracao:03/05/2017 
 ;===============================================================================
 
 ;===============================================================================
@@ -26,7 +27,10 @@ TAB_INT2        EQU     FE02h
 TAB_INT3        EQU     FE03h   
 TAB_INT4        EQU     FE04h
 TAB_INT5        EQU     FE05h   
-TAB_INT6        EQU     FE06h          
+TAB_INT6        EQU     FE06h 
+
+TAB_INTA        EQU     FE0Ah 
+TAB_INTB        EQU     FE0Bh          
 MASCARA_INT		EQU		FFFAh
 
 ; I/O a partir de FF00H
@@ -46,6 +50,7 @@ XY_INICIAL      EQU     0205h
 XY_CODE			EQU		0102h
 XY_CODES		EQU 	0108h
 XY_JOGADA		EQU		0002h
+XY_TEMP  		EQU  	000Fh
 
 ; Posições de memória para jogadas 
 JOGADA_INI		EQU		F000h
@@ -62,12 +67,11 @@ NLINHA			EQU		0100h
 
 ; ASCII chars
 FIM_TEXTO       EQU     0
-INI				EQU		45
-
+INI				EQU		45		; '-'
 
 ; Constantes de definição do Jogo
-JOGADA_SIZE		EQU		6 		; Tamanho do Código
-JOGADA_TOTAL	EQU		22		; Número de Jogadas máximo (max 22, default 10)
+JOGADA_SIZE		EQU		4		; Tamanho do Código
+JOGADA_TOTAL	EQU		15		; Número de Jogadas máximo (max 22, default 10)
 COLORS 			EQU 	6		; Numero de cores
 
 
@@ -81,6 +85,8 @@ COLORS 			EQU 	6		; Numero de cores
                 ORIG    8000h
 VarTextoCode    STR     'CODE:', FIM_TEXTO
 VarTextoJoga	STR		'Jogada: ', FIM_TEXTO
+VarTextoConfirm	STR		'Confirm?', FIM_TEXTO
+VarTextoCClean	STR		'        ', FIM_TEXTO
 
 ;===============================================================================
 ; ZONA III: Codigo
@@ -149,37 +155,20 @@ EscCar:         MOV     M[IO_WRITE], R1
 
 IniciaJogadas:	mov 	R1,	1
 				mov 	R2, JOGADA_INI
-				mov 	R3, JOGADA_TOTAL		
+				mov 	R3, JOGADA_SIZE		
 				mov 	M[R2], R1
-				mov 	R1, INI
+				call 	ResetJogada
+				ret	
+
+ResetJogada: 	mov 	R1, INI
+				mov 	R2, JOGADA_INI
+				mov 	R3, JOGADA_SIZE	
 				inc 	R2	
 IniciaChar:		mov 	M[R2],  R1
 				inc 	R2
 				dec 	R3
 				cmp 	R3, R0
-				br.nz	IniciaChar
-				ret	
-
-
-;===============================================================================
-; Print jogada: Faz print do tabuleiro do jogo na janela de texto
-;               Entradas:	R1 inicio da jogada 
-;							R2 posição inicial da linha 							Alterar/Apagar
-;               Saidas: ---
-;               Efeitos: Imprime a jogada selecionada por R1 na posição R2
-;===============================================================================
-
-PrintJogada:	mov 	R5, R2
-				mov 	R6, R1
-				add 	R6, JOGADA_SIZE 
-CicloPJ:		mov 	R3, M[R1]
-				mov 	M[IO_CURSOR], R5
-				mov 	M[IO_WRITE],  R3
-				inc 	R1
-				add 	R5, 2 
-				cmp 	R1, R6
-				br.nz	CicloPJ
-				ret 
+				br.nz	IniciaChar	
 
 ;===============================================================================
 ; PrintTabuleiro: Faz print do tabuleiro do jogo na janela de texto
@@ -218,8 +207,10 @@ Continue:		mov 	R3, R2
 				dec 	R4
 				cmp 	R4, R0
 				br.nz 	PrintJ 
-				ret 						; <- RETORNA AQUI
+				ret 				
 
+	; subrotinas do PrintTabuleiro
+					
 				; Aumenta dezenas e faz reset a algarismo menos significativo
 IncDezena:		inc 	R6
 				mov 	R1, 48
@@ -250,6 +241,7 @@ PrintConst: 	push 	R1
 
 ;===============================================================================
 ; PrintN: Faz print do numero de jogada atual no tabuleiro de jogo
+;			 até 99 depois dá reset
 ;               Entradas: ---
 ;               Saidas: ---
 ;               Efeitos: Actualiza o número da jogada na janela de texto
@@ -275,6 +267,9 @@ EndN:			add 	R3, 48
                 mov 	M[IO_CURSOR], R2
 				mov 	M[IO_WRITE],  R3
 				ret
+
+	; subrotina para reset após 99
+	
 ResetN:			mov 	R1, 1
 				mov 	M[JOGADA_INI], R1
 				mov 	R2, 000Bh
@@ -320,6 +315,26 @@ EndGetJ:		mov 	M[IO_CURSOR], R2
 				ret
 
 ;===============================================================================
+; Print jogada: Faz print do tabuleiro do jogo na janela de texto
+;               Entradas:	R1 inicio da jogada 
+;							R2 posição inicial da linha 							Alterar/Apagar
+;               Saidas: ---
+;               Efeitos: Imprime a jogada selecionada por R1 na posição R2
+;===============================================================================
+
+PrintJogada:	mov 	R5, R2
+				mov 	R6, R1
+				add 	R6, JOGADA_SIZE 
+CicloPJ:		mov 	R3, M[R1]
+				mov 	M[IO_CURSOR], R5
+				mov 	M[IO_WRITE],  R3
+				inc 	R1
+				add 	R5, 2 
+				cmp 	R1, R6
+				br.nz	CicloPJ
+				ret 
+
+;===============================================================================
 ; GeraCode: Gera Code e guarda-o na memória
 ;               Entradas: ---
 ;               Saidas: ---
@@ -359,13 +374,13 @@ PrintCode:		mov 	R1, JOGADA_INI
 				mov 	R2, XY_CODES 
 				mov 	R6, JOGADA_INI
 				sub 	R6, JOGADA_SIZE 
-CicloPC:		mov 	R3, M[R6]
+CicloPrinC:		mov 	R3, M[R6]
 				mov 	M[IO_CURSOR], R2
 				mov 	M[IO_WRITE],  R3
 				inc 	R6
 				add 	R2, 2 
 				cmp 	R1, R6
-				br.nz	CicloPC
+				br.nz	CicloPrinC
 				rti
 
 ;===============================================================================
@@ -376,8 +391,107 @@ CicloPC:		mov 	R3, M[R6]
 ;===============================================================================
 
 ConfirmaJogada:	call 	IncN 
-				call 	PrintN 	
+				call 	PrintN 
+				mov 	R7, R0
+				call 	ResetJogada
+				call 	CleanConfirm
+				call 	PrintJogaTemp
 				rti
+
+CleanConfirm: 	mov 	R2, XY_TEMP
+				mov 	R1, JOGADA_SIZE
+				shla 	R1, 1
+				add 	R2, R1
+				add 	R2, 4
+				push    VarTextoCClean
+				push 	R2
+				call 	EscString 
+				ret 
+
+;===============================================================================
+; FazJogada: Botões de seleção da chave
+;               Entradas: ---
+;               Saidas: ---
+;               Efeitos: ---
+;===============================================================================
+
+FazJogada1:	  	mov 	R1, '1'
+				call 	SaveJogada			 
+				rti		
+
+FazJogada2:	  	mov 	R1, '2'
+				call 	SaveJogada			 
+				rti		
+
+FazJogada3:	  	mov 	R1, '3'
+				call 	SaveJogada			 
+				rti		
+
+FazJogada4:	  	mov 	R1, '4'
+				call 	SaveJogada			 
+				rti		
+
+FazJogada5:	  	mov 	R1, '5'
+			 	call 	SaveJogada
+				rti		
+
+FazJogada6:	  	mov 	R1, '6'
+				call 	SaveJogada			 
+				rti		
+
+SaveJogada:		mov 	R2, JOGADA_INI
+				inc 	R7
+CheckSize:		cmp 	R7, JOGADA_SIZE
+				br.np 	ContinueSJ 
+				sub 	R7, JOGADA_SIZE
+				br 		CheckSize 	 
+ContinueSJ:		add 	R2, R7
+				mov 	M[R2], R1
+				call	PrintJogaTemp
+				ret
+
+;===============================================================================
+; PrintJogadaTemp: Faz print da jogada temporaria na janela de texto
+;               Entradas: ---
+;               Saidas: ---
+;               Efeitos: ---
+;===============================================================================
+
+PrintJogaTemp:	push 	R1
+				push 	R2
+				push 	R3 
+				push 	R4
+				push 	R5
+
+				mov   	R2, XY_TEMP
+				mov 	R3, JOGADA_SIZE
+
+				mov 	R4, JOGADA_INI 
+CicloPJT:		inc 	R4
+				mov  	R1, M[R4]
+				mov	 	M[IO_CURSOR], R2
+				mov  	M[IO_WRITE],  R1
+				add  	R2, 2
+
+				dec 	R3
+				cmp 	R3, R0 
+				br.nz	CicloPJT
+
+				mov 	R5, JOGADA_SIZE
+				dec 	R5
+				cmp 	R7, R5
+				br.np   EndPJT
+				add 	R2, 4
+				push    VarTextoConfirm
+				push 	R2
+				call 	EscString
+
+EndPJT:			pop 	R5
+				pop 	R4
+				pop 	R3
+				pop 	R2
+				pop 	R1
+				ret 				
 
 ;===============================================================================
 ;                                Programa prinicipal
@@ -387,19 +501,51 @@ inicio:         mov     R1, SP_INICIAL
                 mov     SP, R1
                 call 	LimpaJanela
                 call 	IniciaJogadas
-                call 	PrintTabuleiro			
+                call 	PrintTabuleiro
 
+				call  	PrintJogaTemp		
+
+                ; Setup do Ni inicial 
                 mov 	R1, 565Eh
                 mov 	M[NALEA], R1
 
-                mov 	R1, GeraCode
-                mov 	M[TAB_INT1], R1
-
-                mov 	R1, ConfirmaJogada
-                mov 	M[TAB_INT2], R1
-
+                ; Rotina do botão 0
                 mov     R1, PrintCode
                 mov     M[TAB_INT0], R1
+
+                ; Rotina do botão 1
+                mov     R1, FazJogada1
+                mov     M[TAB_INT1], R1
+
+                ; Rotina do botão 2
+                mov     R1, FazJogada2
+                mov     M[TAB_INT2], R1
+
+                ; Rotina do botão 3
+                mov     R1, FazJogada3
+                mov     M[TAB_INT3], R1
+
+                ; Rotina do botão 4
+                mov     R1, FazJogada4
+                mov     M[TAB_INT4], R1
+
+				 ; Rotina do botão 5
+                mov     R1, FazJogada5
+                mov     M[TAB_INT5], R1
+
+				; Rotina do botão 6
+                mov     R1, FazJogada6
+                mov     M[TAB_INT6], R1
+
+                ; Rotina do botão A (+)
+                mov 	R1, GeraCode
+                mov 	M[TAB_INTA], R1
+
+                ; Rotina do botão B (.)
+                mov 	R1, ConfirmaJogada
+                mov 	M[TAB_INTB], R1
+
+				; Enable dos botões
 				eni
 
 Stop:           br      Stop               
