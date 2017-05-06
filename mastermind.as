@@ -98,7 +98,7 @@ VarTextoCode    STR     'CODE:', FIM_TEXTO
 VarTextoJoga	STR		'Jogada: ', FIM_TEXTO
 VarTextoConfirm	STR		'Confirmar?', FIM_TEXTO
 VarTextoCClean	STR		'          ', FIM_TEXTO
-VarTextoVitoria	STR		'Vitoria!', FIM_TEXTO
+VarTextoVitoria	STR		'Win!', FIM_TEXTO
 
 ;===============================================================================
 ; ZONA III: Codigo
@@ -346,7 +346,7 @@ IncN:			push 	R1
 				ret			
 
 ;===============================================================================
-; SetCursor: Retorna o cursor na linha da jogada atual e na posição de memória
+; SetCursor: Retorna o cursor na linha da jogada atual
 ;               Entradas: ---
 ;               Saidas:  R2 na posição a imprimir a jogada 														
 ;               Efeitos: Põe o cursor no lugar inicial de impressão
@@ -480,7 +480,7 @@ CicloPrinC:		dec 	R1
 				pop 	R3
 				pop 	R2
 				pop 	R1				
-				rti
+				ret
 
 ;===============================================================================
 ; ConfirmaJogada: Incrementa a jogada e escreve na janela de texto
@@ -576,20 +576,16 @@ CicloVit1:		inc 	R1
 				cmp 	R4, R0 
 				br.nz	CicloVit1
 
+				call 	SetCursor
 				mov 	R4, JOGADA_SIZE
-				add 	R4, JOGADA_SIZE
-
-				mov   	R2, XY_INICIAL
-
-CicloVit2:		dec 	R4
-				add  	R2, 2
-				cmp 	R4, R0 
-				br.nz	CicloVit2
-				add 	R2, 0108h
+				shla 	R4, 2
+				add 	R2, R4
+				add 	R2, 0004h
 
 				push    VarTextoVitoria	
 				push 	R2
 				call 	EscString
+				call 	PrintCode
 				jmp 	EndVit
 		
 
@@ -839,6 +835,9 @@ ResetJogo: 		mov 	M[JCOUNTER], R0
 
 NoneRTI:		rti
 
+GiveUp: 		call 	PrintCode
+				rti
+
 ;===============================================================================
 ;                                Programa prinicipal
 ;===============================================================================
@@ -856,7 +855,7 @@ inicio:         mov     R1, SP_INICIAL
                 mov 	M[NALEA], R1
 
                 ; Rotina do botão 0
-                mov     R1, PrintCode
+                mov     R1, GiveUp
                 mov     M[TAB_INT0], R1
 
                 ; Rotina do botão 1
