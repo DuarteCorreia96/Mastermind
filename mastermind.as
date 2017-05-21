@@ -178,8 +178,7 @@ IniciaJogadas:	push 	R1
 				push 	R3
 
 				mov 	R1,	1
-				mov 	R2, JOGADA_INI
-				mov 	R3, JOGADA_SIZE		
+				mov 	R2, JOGADA_INI	
 				mov 	M[R2], R1
 				call 	ResetJogada
 
@@ -499,8 +498,6 @@ ConfirmaJogada:	push 	R1
 				cmp 	R1, JOGADA_TOTAL
 				br.p    EndCJ    
 
-				jmp 	FastAvalia
-
 				; Faz avaliação da Jogada 
 ContinueCJ:		call 	AvaliaJogada
 
@@ -538,57 +535,6 @@ CleanConfirm: 	push 	R1
 				pop 	R1 
 				ret 
 
-	; Confirma Rapidamente se ganhou
-FastAvalia: 	mov 	R1, JOGADA_INI
-				mov 	R2, JOGADA_INI
-
-				mov 	R4, JOGADA_SIZE 
-				mov 	R5, R0
-
-CicloFA:		inc 	R1
-				dec 	R2
-
-				mov 	R3, M[R1]
-				cmp 	M[R2], R3
-				call.z 	AddR5
-
-				dec 	R4
-				cmp 	R4, R0
-				br.nz  	CicloFA
-
-				cmp 	R5, JOGADA_SIZE
-				jmp.z 	Vitoria
-EndFA:			jmp 	ContinueCJ
-
-	; Aumenta o R5
-AddR5: 			inc 	R5
-				ret
-
-	; Função de Vitória
-Vitoria:		mov 	R1, JOGADA_INI
-				add 	R1, JOGADA_SIZE
-
-				mov 	R4, JOGADA_SIZE
-CicloVit1:		inc 	R1
-				dec 	R4
-				mov 	R3, 'P'
-				mov 	M[R1], R3
-				cmp 	R4, R0 
-				br.nz	CicloVit1
-
-				call 	SetCursor
-				mov 	R4, JOGADA_SIZE
-				shla 	R4, 2
-				add 	R2, R4
-				add 	R2, 0004h
-
-				push    VarTextoVitoria	
-				push 	R2
-				call 	EscString
-				call 	PrintCode
-				jmp 	EndVit
-		
-
 ;===============================================================================
 ; FazJogadax: Botões de seleção da chave
 ;               Entradas: ---
@@ -596,28 +542,40 @@ CicloVit1:		inc 	R1
 ;               Efeitos: ---
 ;===============================================================================
 
-FazJogada1:	  	mov 	R1, '1'
-				call 	SaveJogada			 
+FazJogada1:	  	push 	R1
+				mov 	R1, '1'
+				call 	SaveJogada
+				pop 	R1		 
 				rti		
 
-FazJogada2:	  	mov 	R1, '2'
-				call 	SaveJogada			 
+FazJogada2:	  	push 	R1
+				mov 	R1, '2'
+				call 	SaveJogada	
+				pop 	R1		 
 				rti		
 
-FazJogada3:	  	mov 	R1, '3'
-				call 	SaveJogada			 
+FazJogada3:	  	push 	R1
+				mov 	R1, '3'
+				call 	SaveJogada
+				pop 	R1			 
 				rti		
 
-FazJogada4:	  	mov 	R1, '4'
-				call 	SaveJogada			 
+FazJogada4:	  	push 	R1
+				mov 	R1, '4'
+				call 	SaveJogada
+				pop 	R1			 
 				rti		
 
-FazJogada5:	  	mov 	R1, '5'
+FazJogada5:	  	push 	R1
+				mov 	R1, '5'
 			 	call 	SaveJogada
+			 	pop 	R1
 				rti
 
-FazJogada6:	  	mov 	R1, '6'
-				call 	SaveJogada			 
+FazJogada6:	  	push 	R1
+				mov 	R1, '6'
+				call 	SaveJogada	
+				pop 	R1		 
 				rti		
 
 
@@ -695,30 +653,72 @@ EndPJT:			pop 	R6
 ;               Efeitos: ---
 ;===============================================================================							
 
-AvaliaJogada: 	call 	CopyCode
-				
+AvaliaJogada: 	push 	R1
+				push 	R2
+				push 	R3
+				push 	R4
+				push 	R5
+				push 	R6
+				push 	R7
+
+				call 	CopyCode
 				; Posições 	R1-> Jogada
 				;			R2-> Código para verificar
 				;			R3-> Counter da avaliação
 				mov 	R1, JOGADA_INI
+				mov 	R2, JOGADA_INI		
+				sub 	R2, JOGADA_SIZE
 				mov 	R3, JOGADA_INI 	
 				add  	R3, JOGADA_SIZE
 
 				; Counter do ciclo Exterior
 				mov 	R4, JOGADA_SIZE 
 
-				; Counter do ciclo Branco
-				mov 	R7, 1	
+				; Counter de P's
+				mov 	R7, R0
 
-CicloExtAJ: 	inc 	R1				
+	; Set Pretos
+CicloPreto:		inc 	R1
+				dec  	R2
+
+				; If (M[R1] != M[R2]) <=> If(Jogada[i] != Chave[j])
+				mov 	R6, M[R1]
+				cmp 	R6, M[R2]
+				call.z 	SetPreto
+
+				dec 	R4
+				cmp 	R4, R0
+				br.nz 	CicloPreto
+
+	; Verifica condição de vitória
+Vitoria:		mov 	R1, JOGADA_SIZE
+				cmp 	R7, R1
+				br.nz  	NotVictory
+
+				call 	SetCursor
+				mov 	R4, JOGADA_SIZE
+				shla 	R4, 2
+				add 	R2, R4
+				add 	R2, 0004h
+
+				push    VarTextoVitoria	
+				push 	R2
+				call 	EscString
+				call 	PrintCode
+				jmp 	EndAvalia
+			
+	; Set Brancos
+NotVictory:		mov 	R1, JOGADA_INI
+				mov 	R4, JOGADA_SIZE 
+
+CicloBrancoExt:	inc 	R1				
 				
  				; Saltar já verificado
  				mov 	R6, R1
  				add 	R6, JOGADA_SIZE
  				add 	R6, JOGADA_SIZE
-
  				cmp 	M[R6], R0
- 				jmp.z   ContinueAJE	
+ 				br.z   	ContinueAJE	
 
 				; Posição do código a verificar
 				mov 	R2, JOGADA_INI		
@@ -727,61 +727,56 @@ CicloExtAJ: 	inc 	R1
 				; Counter do Ciclo Interior
 				mov 	R5, JOGADA_SIZE
 
-CicloIntAJ: 	dec 	R2
+CicloBrancoInt: dec 	R2
 				
 				; If (M[R1] != M[R2]) <=> If(Jogada[i] != Chave[j])
 				mov 	R6, M[R1]
 				cmp 	R6, M[R2]
-				br.nz 	ContinueAJI
-
-				cmp 	R4, R5
-				jmp.z 	SetPreto
-
-				cmp 	R7, R0
 				jmp.z 	SetBranco
-
-				; Fim dos ifs	
-ContinueAJI:	dec 	R5
+	
+				dec 	R5
 				cmp 	R5, R0
-				br.p  	CicloIntAJ
+				br.p  	CicloBrancoInt
 
 ContinueAJE:	dec 	R4
 				cmp 	R4, R0
-				jmp.nz 	CicloExtAJ
+				br.nz 	CicloBrancoExt
 
-				cmp 	R7, R0
-				br.z 	EndAJ
-
-				mov 	R1, JOGADA_INI
-				mov 	R4, JOGADA_SIZE
-				mov 	R7, R0
-				jmp  	CicloExtAJ
-				
-EndAJ:			ret
+EndAvalia:		pop 	R7
+				pop 	R6
+				pop 	R5
+				pop 	R4
+				pop 	R3
+				pop 	R2
+				pop 	R1
+				ret	
 
 	; Subrotina do AvaliaJogada
 
-		; Set Branco e Preto 
-SetPreto:		inc 	R3
+		; Set Branco e Preto
+
+SetPreto: 		inc 	R3 			; Incrementa Counter
+				inc 	R7 			; Incrementa Counter de Pretos
 				mov		R6, 'P'
-				mov 	M[R3], R6
-				mov 	R6, INI
+				mov 	M[R3], R6 	; Imprime 'P'
+				mov 	R6, INI 	; Elimina do codecheck
 				mov 	M[R2], R6
-
-				; Marca visitado
-				mov 	R6, R1
-				add 	R6, JOGADA_SIZE
-				add 	R6, JOGADA_SIZE
-				mov 	M[R6], R0
-
-				jmp 	ContinueAJE	
+				call 	Setvisitado
+				ret
 
 SetBranco:		inc 	R3
 				mov		R6, 'B'
 				mov 	M[R3], R6
 				mov 	R6, INI
 				mov 	M[R2], R6
-				jmp 	ContinueAJE			
+				call 	Setvisitado
+				br.z 	ContinueAJE			
+
+Setvisitado: 	mov 	R6, R1
+				add 	R6, JOGADA_SIZE
+				add 	R6, JOGADA_SIZE
+				mov 	M[R6], R0
+				ret
 
 		; Copia o código para o sítio de teste e inicia avaliação
 CopyCode:		mov 	R1, JOGADA_INI
@@ -817,7 +812,6 @@ CicloCC:		dec 	R1
 				cmp 	R4, R0
 				br.nz  	CicloCC
 				ret	
-
 
 ;===============================================================================
 ; ResetJogo: Faz reset da janela de jogo
@@ -883,7 +877,7 @@ inicio:         mov     R1, SP_INICIAL
                 mov     M[TAB_INT6], R1
 
                	; Rotina do botão 7
-                mov     R1, NoneRTI
+                mov     R1, SelectXTimer
                 mov     M[TAB_INT7], R1
 
                 ; Rotina do botão 8

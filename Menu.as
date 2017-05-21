@@ -39,13 +39,13 @@ TAB_INTD        EQU     FE0Dh
 TAB_INTE        EQU     FE0Eh
 TAB_INTF        EQU     FE0Fh
 
-MASCARA_INT	EQU	FFFAh
+MASCARA_INT	    EQU	FFFAh
 
 ; I/O a partir de FF00H
 DISP7S1         EQU     FFF0h
 DISP7S2         EQU     FFF1h
-LCD_WRITE	EQU	FFF5h
-LCD_CURSOR	EQU	FFF4h	
+LCD_WRITE	    EQU	    FFF5h
+LCD_CURSOR	    EQU	    FFF4h	
 LEDS            EQU     FFF8h
 INTERRUPTORES   EQU     FFF9h
 IO_CURSOR       EQU     FFFCh
@@ -556,4 +556,3 @@ inicio:         mov     R1, SP_INICIAL
                 mov     M[PLAYC], R1
 
 stop:           br      stop 
-

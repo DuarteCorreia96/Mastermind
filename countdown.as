@@ -107,7 +107,7 @@ StartTimer: 	push 	R1
      ; Inicia a contagem de 2 minutos
 StartClock: 	push 	R1
 
-				mov 	R1, 10
+				mov 	R1, 240
 				mov 	M[TIME], R1
 				call 	StartTimer
 				call 	PrintTime
