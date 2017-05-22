@@ -1,4 +1,6 @@
 from random import randint
+import time
+import sys
 
 
 # Gera código na forma int
@@ -92,7 +94,7 @@ def HitCount(code, test):
 # Retorna a próxima jogada
 def GetNextPLay(plays, codeavals):
 
-    mins = 99999999
+    mins = sys.maxsize
     minplay = -1
     inS = False
 
@@ -139,7 +141,8 @@ def PrintPLay(nplay, play, aval):
 
         playtoprint = ''.join(map(str, DecodeS(play)))
         avaltoprint = ''.join(map(str, DecodeAval(aval)))
-        print("  " + str(nplay) + ": " + playtoprint + " | " + avaltoprint)
+        nplaytoprint = str(u'%02d' % nplay)
+        print("  " + nplaytoprint + ": " + playtoprint + " | " + avaltoprint)
 
 
 def main():
@@ -171,9 +174,13 @@ def main():
     return 0
 
 
-#Programa principal
+# Programa principal
 ncores = 6
 sizecode = 4
 sizeS = ncores ** sizecode
 
+start = time.clock()
 main()
+end = time.clock()
+
+print("\n   Time: ", str(round(end - start, 3)), " \n")

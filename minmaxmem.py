@@ -1,4 +1,6 @@
 from random import randint
+import time
+import sys
 
 
 # Gera código na forma int
@@ -66,17 +68,17 @@ def CreateS(code, play):
 
 
 # Veriifca se as jogadas estão em S
-def TakefromS(S, code, play):
-
-    x = 0
+def RemovefromS(S, code, play):
 
     # Avaliação do código com a jogada
     avalcode = HitCount(play, code)
 
+    x = 0
     # Raciocinio conrário ao do CreateS
-    while x <= len(S) - 1:
+    while x < len(S):
         if(avalcode != HitCount(play, S[x])):
             S.remove(S[x])
+            x -= 1
 
         x += 1
 
@@ -120,7 +122,7 @@ def HitCount(code, test):
 # Retorna a próxima jogada
 def GetNextPLay(S, plays, code):
 
-    mins = 99999999
+    mins = sys.maxsize
     minplay = -1
 
     for guess in range(sizeS):
@@ -142,17 +144,17 @@ def GetNextPLay(S, plays, code):
             avals[HitCount(guess, S[x])] += 1
 
         # Avaliação mais recorrente, i.e., o pior caso da play a avaliar
-        maxs = max(avals)
+        worstcase = max(avals)
 
         # Verificar dos piores casos o que elimina mais possibilidades (minmax)
-        if maxs > mins:
+        if worstcase > mins:
             continue
 
-        elif maxs < mins:
+        elif worstcase < mins:
 
             inS = True if guess in S else False
 
-            mins = maxs
+            mins = worstcase
             minplay = guess
             continue
 
@@ -160,7 +162,7 @@ def GetNextPLay(S, plays, code):
         elif not inS and guess in S:
 
             inS = True
-            mins = maxs
+            mins = worstcase
             minplay = guess
 
     return minplay
@@ -171,7 +173,8 @@ def PrintPLay(nplay, play, aval):
 
         playtoprint = ''.join(map(str, DecodeS(play)))
         avaltoprint = ''.join(map(str, DecodeAval(aval)))
-        print("  " + str(nplay) + ": " + playtoprint + " | " + avaltoprint)
+        nplaytoprint = str(u'%02d' % nplay)
+        print("  " + nplaytoprint + ": " + playtoprint + " | " + avaltoprint)
 
 
 def main():
@@ -193,7 +196,7 @@ def main():
     while aval != 20:
 
         nextplay = GetNextPLay(S, plays, code)
-        S = TakefromS(S, code, nextplay)
+        S = RemovefromS(S, code, nextplay)
 
         plays.append(nextplay)
 
@@ -203,12 +206,52 @@ def main():
         nplay += 1
         PrintPLay(nplay, nextplay, aval)
 
-    return 0
+    return nplay
 
 
-#Programa principal
+# Programa principal
 ncores = 6
 sizecode = 4
 sizeS = ncores ** sizecode
 
-main()
+maxtime = 0
+mintime = sys.maxsize
+totaltime = 0
+
+play = 0
+maxplay = 0
+minplay = sys.maxsize
+totalplay = 0
+
+testsize = 4000
+
+for x in range(testsize):
+
+    print("\n Game: ", x + 1)
+
+    start = time.clock()
+    play = main()
+    end = time.clock()
+
+    maxplay = play if play > maxplay else maxplay
+    minplay = play if play < minplay else minplay
+    totalplay += play
+
+    inttime = end - start
+    maxtime = inttime if inttime > maxtime else maxtime
+    mintime = inttime if inttime < mintime else mintime
+    totaltime += inttime
+
+avgtime = totaltime / testsize
+avgplay = totalplay / testsize
+
+print("\n Amount of games: ", testsize, "\n")
+
+print("   Max Time: ", str(round(maxtime, 2)), " s\n")
+print("   Min Time: ", str(round(mintime, 2)), " s\n")
+print("   Avg Time: ", str(round(avgtime, 4)), " s\n")
+
+print("\n")
+print("   Max Play: ", str(round(maxplay, 4)), " plays\n")
+print("   Min Play: ", str(round(minplay, 4)), " plays\n")
+print("   Avg Play: ", str(round(avgplay, 4)), " plays\n")
